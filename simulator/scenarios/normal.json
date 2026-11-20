@@ -1,0 +1,20 @@
+{
+  "id": "normal",
+  "name": "Nước sạch đô thị (Normal Clean Water)",
+  "description": "Nguồn nước máy đạt chuẩn, các chỉ số dao động tự nhiên quanh mức cơ sở (baseline).",
+  "duration_seconds": 0,
+  "transition_seconds": 5,
+  "targets": {
+    "ph": 7.20,
+    "ec": 350.0,
+    "tds": 175.0,
+    "turbidity": 0.40,
+    "orp": 620.0,
+    "chlorine": 0.50,
+    "temperature": 27.5,
+    "nh4": 0.03,
+    "no3": 4.0,
+    "uv254": 0.020,
+    "electrical_leak": 0.0
+  }
+}

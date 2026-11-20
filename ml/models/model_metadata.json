@@ -1,0 +1,42 @@
+{
+  "model_version": "1.0.0-rf-isolation",
+  "trained_at": "2026-09-28T09:59:57.935143+00:00",
+  "n_samples": 24000,
+  "features": [
+    "ph",
+    "ec",
+    "tds",
+    "turbidity",
+    "orp",
+    "chlorine",
+    "temperature",
+    "nh4",
+    "no3",
+    "uv254"
+  ],
+  "classes": [
+    "NORMAL",
+    "MUDDY_SEDIMENT",
+    "SALINE_INTRUSION",
+    "ACID_CONTAMINATION",
+    "CHLORINE_DEPLETION",
+    "AMMONIA_POLLUTION",
+    "NITRATE_RUNOFF",
+    "ORGANIC_POLLUTION",
+    "MIXED_DISASTER"
+  ],
+  "isolation_forest_auc": 0.9999,
+  "classifier_accuracy": 1.0,
+  "feature_importances": {
+    "ph": 0.0526,
+    "ec": 0.1547,
+    "tds": 0.1508,
+    "turbidity": 0.1379,
+    "orp": 0.1038,
+    "chlorine": 0.1184,
+    "temperature": 0.0001,
+    "nh4": 0.1395,
+    "no3": 0.0745,
+    "uv254": 0.0676
+  }
+}

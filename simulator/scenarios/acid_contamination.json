@@ -1,0 +1,20 @@
+{
+  "id": "acid_contamination",
+  "name": "Nhiễm axit công nghiệp (Acid Contamination)",
+  "description": "Nguồn nước bị axit hóa nghiêm trọng, pH giảm sâu dưới 5.0, nguy hiểm ăn mòn và ngộ độc.",
+  "duration_seconds": 60,
+  "transition_seconds": 8,
+  "targets": {
+    "ph": 4.60,
+    "ec": 890.0,
+    "tds": 445.0,
+    "turbidity": 1.20,
+    "orp": 780.0,
+    "chlorine": 0.15,
+    "temperature": 29.2,
+    "nh4": 0.04,
+    "no3": 4.8,
+    "uv254": 0.035,
+    "electrical_leak": 0.0
+  }
+}

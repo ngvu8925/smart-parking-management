@@ -1,0 +1,20 @@
+{
+  "id": "organic_contamination",
+  "name": "Nhiễm chất hữu cơ / UV254 tăng (Organic Pollution)",
+  "description": "Chỉ số UV254 tăng vọt và ORP sụt giảm, báo hiệu sự hiện diện của hợp chất hữu cơ hòa tan (COD/TOC).",
+  "duration_seconds": 60,
+  "transition_seconds": 8,
+  "targets": {
+    "ph": 6.85,
+    "ec": 490.0,
+    "tds": 245.0,
+    "turbidity": 2.40,
+    "orp": 280.0,
+    "chlorine": 0.05,
+    "temperature": 28.5,
+    "nh4": 0.22,
+    "no3": 7.4,
+    "uv254": 0.145,
+    "electrical_leak": 0.0
+  }
+}

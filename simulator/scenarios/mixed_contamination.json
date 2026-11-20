@@ -1,0 +1,20 @@
+{
+  "id": "mixed_contamination",
+  "name": "Thảm họa ô nhiễm phức hợp (Severe Mixed Contamination)",
+  "description": "Nhiễm độc tổng hợp nghiêm trọng: pH axit hóa sâu, EC vọt, độ đục cao, mất sạch clo và nhiễm Amoni.",
+  "duration_seconds": 60,
+  "transition_seconds": 6,
+  "targets": {
+    "ph": 5.10,
+    "ec": 1800.0,
+    "tds": 900.0,
+    "turbidity": 8.50,
+    "orp": 250.0,
+    "chlorine": 0.05,
+    "temperature": 29.5,
+    "nh4": 0.85,
+    "no3": 16.0,
+    "uv254": 0.095,
+    "electrical_leak": 0.0
+  }
+}

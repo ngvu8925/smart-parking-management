@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>
+    try { document.documentElement.dataset.theme = localStorage.getItem('swg-theme') === 'dark' ? 'dark' : 'light'; }
+    catch { document.documentElement.dataset.theme = 'light'; }
+  </script>
+  <title>Smart Water Guardian · Trạm giám sát nước</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=workbench-2">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- ASAO ADR-0042 Top Dev Environment Watermark Ribbon -->
+  <div class="asao-dev-ribbon" id="asaoDevRibbon">
+    <div class="ribbon-content">
+      <span class="ribbon-icon"></span>
+      <span class="ribbon-text" id="ribbonText">
+        <strong>Mô phỏng</strong> &nbsp;·&nbsp; Dữ liệu thử nghiệm nội bộ
+      </span>
+      <span class="ribbon-badge">Mô phỏng</span>
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3c-2 3-6 7.2-6 11a6 6 0 0 0 12 0c0-3.8-4-8-6-11Z"/><path d="M9 15a3 3 0 0 0 3 3"/></svg></div>
+        <div class="brand-text">
+          <h1>Smart Water Guardian</h1>
+          <p>Trạm giám sát chất lượng nước</p>
+        </div>
+      </div>
+
+      <!-- Header Multi-Tenant & Status Controls -->
+      <div class="header-right">
+        <!-- Node Station Selector -->
+        <div class="header-multi-tenant">
+          <select id="nodeSelector" class="header-select" onchange="switchDeviceNode(this.value)" title="Chọn trạm giám sát">
+            <option value="water-guardian-node-01">Node 01: Cầu Giấy (Hà Nội)</option>
+            <option value="water-guardian-node-02">Node 02: Thủ Đức (TP.HCM)</option>
+          </select>
+
+          <!-- ASAO User Persona Chip -->
+          <div class="user-chip" id="userChip">
+            <span class="user-avatar" id="userAvatar"></span>
+            <div class="user-info">
+              <span class="user-name" id="userName">Nguyễn Văn Thắng</span>
+              <span class="user-role-badge" id="userRole">TECH LEAD</span>
+            </div>
+            <select id="personaSelector" class="persona-select" onchange="switchPersona(this.value)" title="Chuyển đổi Persona kiểm thử">
+              <option value="usr-asao-01-lead">techlead.asao (Tech Lead)</option>
+              <option value="usr-asao-02-qa">qa.engineer (QA Tester)</option>
+              <option value="usr-asao-03-op">operator.hanoi (Operator)</option>
+            </select>
+          </div>
+
+          <a href="https://auth-dev.asao.vn/realms/asao/protocol/openid-connect/auth?client_id=water-guardian-sentinel&response_type=code&scope=openid%20profile%20email&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2F" 
+             target="_blank" class="btn btn-outline btn-sm" id="ssoBtn" title="Đăng nhập Keycloak OIDC IAM">
+             Đăng nhập
+          </a>
+        </div>
+
+        <div class="header-badges">
+          <button type="button" class="btn btn-outline btn-sm theme-toggle" id="themeToggle" aria-label="Chuyển sang giao diện tối" aria-pressed="false">
+            <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
+            <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20 14a8.5 8.5 0 0 1-10-10A8.5 8.5 0 1 0 20 14Z"/></svg>
+            <span id="themeLabel">Sáng</span>
+          </button>
+          <span class="badge badge-live" id="connBadge">
+            <span class="badge-pulse"></span> <span id="connText">LIVE</span>
+          </span>
+          <button class="btn btn-outline btn-sm" onclick="resetBaseline()" title="Đặt lại Baseline cơ sở về ban đầu">
+             Reset
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Desktop & Tablet Tab Navigation Bar (Hidden on Mobile) -->
+    <nav class="main-nav" id="mainNav">
+      <button class="nav-tab active" data-tab="tab-overview" onclick="switchTab('tab-overview')">
+        <span class="nav-tab-icon"></span>
+        <span class="nav-tab-label">Tổng quan</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-analytics" onclick="switchTab('tab-analytics')">
+        <span class="nav-tab-icon"></span>
+        <span class="nav-tab-label">Phân tích</span>
+        <span class="nav-tab-badge" id="patternNavBadge">NORMAL</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-sensors" onclick="switchTab('tab-sensors')">
+        <span class="nav-tab-icon"></span>
+        <span class="nav-tab-label">Cảm biến</span>
+        <span class="nav-tab-badge">10 chỉ số</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-actuators" onclick="switchTab('tab-actuators')">
+        <span class="nav-tab-icon"></span>
+        <span class="nav-tab-label">Điều khiển</span>
+        <span class="nav-tab-badge" id="actuatorNavBadge">AUTO</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-scenarios" onclick="switchTab('tab-scenarios')">
+        <span class="nav-tab-icon"></span>
+        <span class="nav-tab-label">Mô phỏng</span>
+        <span class="nav-tab-badge" id="scenarioNavBadge">11 kịch bản</span>
+      </button>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: TỔNG QUAN (OVERVIEW DASHBOARD)      -->
+    <!-- ========================================== -->
+    <section class="tab-pane active" id="tab-overview">
+      <div class="workspace-heading">
+        <div class="eyebrow">TRẠM GIÁM SÁT / TỔNG QUAN</div>
+        <h2>Giám sát nguồn nước</h2>
+        <p>Theo dõi chỉ số, trạng thái thiết bị và các sự kiện gần nhất.</p>
+      </div>
+      <!-- Top Status Banner & Radial Anomaly Gauge -->
+      <div class="banner-grid">
+        <!-- Status Banner -->
+        <div class="status-banner normal" id="statusBanner">
+          <div class="status-icon-wrapper" id="statusIcon"></div>
+          <div class="status-content">
+            <div class="status-tag" id="statusTag">Trạng thái HỆ THỐNG</div>
+            <h2 id="statusTitle">Các chỉ số ổn định</h2>
+            <p id="statusDesc">Chưa ghi nhận chỉ số vượt giới hạn theo dõi.</p>
+            <div class="factors-pill-list" id="factorsList">
+              <span class="factor-pill">Đường cơ sở: Chuẩn nước máy ổn định</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Anomaly Score Radial Gauge -->
+        <div class="glass-card gauge-card">
+          <div class="gauge-circle">
+            <svg viewBox="0 0 100 100">
+              <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+              <circle class="gauge-progress" id="gaugeProgress" cx="50" cy="50" r="45"></circle>
+            </svg>
+            <div class="gauge-text">
+              <div class="gauge-score" id="gaugeScore">0%</div>
+              <div class="gauge-label">Bất thường</div>
+            </div>
+          </div>
+          <div class="gauge-info">
+            <div class="gauge-info-item">
+              <span>Đường cơ sở</span>
+              <strong>Nước máy đô thị</strong>
+            </div>
+            <div class="gauge-info-item">
+              <span>Rò điện</span>
+              <strong id="leakStatusText" style="color: var(--accent-green);">Không phát hiện</strong>
+            </div>
+            <div class="gauge-info-item">
+              <span>Phương pháp</span>
+              <strong id="mlModelText" style="color: var(--accent-blue);">Quy tắc &amp; thống kê</strong>
+            </div>
+            <div class="gauge-info-item">
+              <span>Kết quả mô hình</span>
+              <strong id="mlPredictionText" style="color: var(--accent-green);">Đang tải...</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick 4 KPI Highlight Strip -->
+      <div class="kpi-grid">
+        <div class="glass-card kpi-card" onclick="switchTab('tab-sensors')">
+          <div class="kpi-top">
+            <span class="kpi-icon"></span>
+            <span class="kpi-label">Độ pH</span>
+            <span class="badge badge-live kpi-badge" id="kpiPhBadge">OK</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiPhVal">7.20</span>
+            <span class="kpi-unit">pH</span>
+          </div>
+          <div class="kpi-bottom" id="kpiPhNote">Chuẩn WHO: 6.5 - 8.5</div>
+        </div>
+
+        <div class="glass-card kpi-card" onclick="switchTab('tab-sensors')">
+          <div class="kpi-top">
+            <span class="kpi-icon"></span>
+            <span class="kpi-label">Độ dẫn điện</span>
+            <span class="badge badge-live kpi-badge" id="kpiEcBadge">OK</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiEcVal">420</span>
+            <span class="kpi-unit">µS/cm</span>
+          </div>
+          <div class="kpi-bottom" id="kpiEcNote">Chuẩn sinh hoạt: &lt; 1000</div>
+        </div>
+
+        <div class="glass-card kpi-card" onclick="switchTab('tab-sensors')">
+          <div class="kpi-top">
+            <span class="kpi-icon"></span>
+            <span class="kpi-label">Độ đục</span>
+            <span class="badge badge-live kpi-badge" id="kpiTurbidityBadge">OK</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiTurbidityVal">1.2</span>
+            <span class="kpi-unit">NTU</span>
+          </div>
+          <div class="kpi-bottom" id="kpiTurbidityNote">Chuẩn QCVN: &lt; 2.0 NTU</div>
+        </div>
+
+        <div class="glass-card kpi-card" onclick="switchTab('tab-actuators')">
+          <div class="kpi-top">
+            <span class="kpi-icon"></span>
+            <span class="kpi-label">Rò điện</span>
+            <span class="badge badge-live kpi-badge" id="kpiLeakBadge">AN TOÀN</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiLeakVal" style="font-size: 1.25rem;">SAFE</span>
+            <span class="kpi-unit">0.00 mA</span>
+          </div>
+          <div class="kpi-bottom" id="kpiLeakNote">Bảo vệ RCBO điện cực</div>
+        </div>
+      </div>
+
+      <!-- Quick Actuators Summary Strip -->
+      <div class="glass-card quick-actuators-card">
+        <div class="quick-actuator-item">
+          <div class="quick-act-icon"></div>
+          <div class="quick-act-info">
+            <span class="quick-act-title">Van cấp nước</span>
+            <strong id="quickValveState" class="text-success">Đang mở</strong>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="switchTab('tab-actuators')">Chi tiết &rarr;</button>
+        </div>
+        <div class="quick-actuator-item">
+          <div class="quick-act-icon"></div>
+          <div class="quick-act-info">
+            <span class="quick-act-title">Bình lưu mẫu</span>
+            <strong id="quickSampleState" class="text-primary">SẴN SÀNG</strong>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="switchTab('tab-actuators')">Chi tiết &rarr;</button>
+        </div>
+        <div class="quick-actuator-item">
+          <div class="quick-act-icon"></div>
+          <div class="quick-act-info">
+            <span class="quick-act-title">Còi báo động</span>
+            <strong id="quickAlarmState" class="text-secondary">Không báo động</strong>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="switchTab('tab-actuators')">Chi tiết &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Real-time Chart & Deduplicated Alert Log Grid -->
+      <div class="charts-logs-grid">
+        <!-- Live History Chart -->
+        <div class="glass-card">
+          <div class="card-header-flex">
+            <div>
+              <h4 class="card-title">Diễn biến chỉ số</h4>
+              <p class="card-subtitle">pH, độ đục, clo dư và mức bất thường</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <div class="history-range-group">
+                <button class="history-range-btn active" id="rangeBtn35" onclick="setChartPoints(35)">35s</button>
+                <button class="history-range-btn" id="rangeBtn60" onclick="setChartPoints(60)">60s</button>
+                <button class="history-range-btn" id="rangeBtnDb" onclick="fetchDbHistory(100)">Lịch sử</button>
+              </div>
+              <span class="badge badge-live">Cập nhật 1 giây</span>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="liveChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Incident Audit Logs -->
+        <div class="glass-card">
+          <div class="card-header-flex">
+            <div>
+              <h4 class="card-title">Sự kiện gần đây</h4>
+              <p class="card-subtitle">Cảnh báo và thao tác vận hành</p>
+            </div>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <span class="badge badge-simulated" id="logCountBadge">0 sự kiện</span>
+              <button class="btn btn-outline btn-sm" onclick="clearAllAlerts()" title="Xóa toàn bộ nhật ký sự kiện">
+                 Xóa
+              </button>
+            </div>
+          </div>
+          <div class="logs-list" id="logsList">
+            <div class="log-item">
+              <div class="log-time">Khởi động</div>
+              <div class="log-title">Hệ thống sẵn sàng</div>
+              <div class="log-desc">Đã kết nối luồng cảm biến. Đang theo dõi dữ liệu.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: PHÂN TÍCH 4 LỚP (4-LAYER ANALYTICS) -->
+    <!-- ========================================== -->
+    <section class="tab-pane" id="tab-analytics">
+      <!-- 4-Layer Sentinel Architecture Hero Card -->
+      <div class="glass-card analytics-hero-card">
+        <div class="analytics-hero-header">
+          <div class="hero-left">
+            <div class="hero-icon"></div>
+            <div>
+              <h3 class="hero-title">Phân tích chất lượng nước</h3>
+              <p class="hero-subtitle">
+                Đối chiếu ngưỡng, độ lệch và các dạng biến động của nguồn nước.
+              </p>
+            </div>
+          </div>
+          <div class="hero-right">
+            <span class="badge" id="patternBadgeBig" style="font-size: 0.85rem; padding: 0.45rem 0.9rem;">
+              Chưa ghi nhận bất thường
+            </span>
+          </div>
+        </div>
+
+        <!-- 4 Layers Cards Grid -->
+        <div class="layers-grid">
+          <!-- Layer 1 -->
+          <div class="layer-card" id="layer1Card">
+            <div class="layer-card-top">
+              <div class="layer-number">LỚP 1</div>
+              <span id="layer1Badge" class="badge badge-live">ĐẠT CHUẨN</span>
+            </div>
+            <h4 class="layer-card-title">Giới hạn theo dõi</h4>
+            <p class="layer-card-tech">Ngưỡng chỉ số và trạng thái rò điện</p>
+            <div class="layer-card-content" id="layer1Content">
+              Kiểm soát ngưỡng giới hạn trên/dưới bắt buộc, phát hiện rò điện khẩn cấp, phát hiện probe kẹt giá trị hoặc hở mạch.
+            </div>
+            <div class="layer-card-footer">
+              <span>Ưu tiên:</span> <strong>Cao nhất (Cắt van tức thời)</strong>
+            </div>
+          </div>
+
+          <!-- Layer 2 -->
+          <div class="layer-card" id="layer2Card">
+            <div class="layer-card-top">
+              <div class="layer-number">LỚP 2</div>
+              <span id="layer2Badge" class="badge" style="background: rgba(52, 211, 153, 0.15); color: var(--accent-green);">Z-Score: 0.37</span>
+            </div>
+            <h4 class="layer-card-title">Độ lệch và xu hướng</h4>
+            <p class="layer-card-tech">Độ lệch chuẩn · Tốc độ thay đổi</p>
+            <div class="layer-card-content" id="layer2Content">
+              Theo dõi độ lệch chuẩn Z so với lịch sử động và tốc độ biến thiên dV/dt nhằm cảnh báo sớm trước khi chạm ngưỡng nguy hiểm.
+            </div>
+            <div class="layer-card-footer">
+              <span>Tốc độ:</span> <strong>Phản xạ vi sai 1Hz</strong>
+            </div>
+          </div>
+
+          <!-- Layer 3 -->
+          <div class="layer-card" id="layer3Card">
+            <div class="layer-card-top">
+              <div class="layer-number">LỚP 3</div>
+              <span id="layer3Badge" class="badge" style="background: rgba(96, 165, 250, 0.15); color: var(--accent-blue);">Chờ dữ liệu</span>
+            </div>
+            <h4 class="layer-card-title">Điểm bất thường</h4>
+            <p class="layer-card-tech">Tổng hợp độ lệch của các chỉ số</p>
+            <div class="layer-card-content" id="layer3Content">
+              Phát hiện các tương quan bất thường ngầm giữa 10 chỉ số mà quy tắc đơn lẻ không nhận biết được.
+            </div>
+            <div class="layer-card-footer">
+              <span>Đánh giá:</span> <strong>Theo dữ liệu hiện tại</strong>
+            </div>
+          </div>
+
+          <!-- Layer 4 -->
+          <div class="layer-card" id="layer4Card">
+            <div class="layer-card-top">
+              <div class="layer-number">LỚP 4</div>
+              <span id="layer4Badge" class="badge" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple);">ĐỘ TIN CẬY: 96%</span>
+            </div>
+            <h4 class="layer-card-title">Dạng biến động</h4>
+            <p class="layer-card-tech">Đối chiếu với kịch bản tham chiếu</p>
+            <div class="layer-card-content" id="layer4Content">
+              Phân loại nguyên nhân sự cố: Bùn xói mòn, Axit hóa, Chất thải hữu cơ, Xâm nhập mặn, Mất clo, Phân bón nông nghiệp, Rò điện.
+            </div>
+            <div class="layer-card-footer">
+              <span>Phân loại:</span> <strong>8 Hình thái ô nhiễm</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regulatory & Lab Disclaimer Notice -->
+        <div class="disclaimer-banner">
+          <div class="disclaimer-icon"></div>
+          <div class="disclaimer-text">
+            <strong>Lưu ý khi đọc kết quả</strong>
+            <p id="disclaimerNotice">Hệ thống giám sát chỉ dấu an toàn - Không tuyên bố an toàn tuyệt đối và không thay thế xét nghiệm vi sinh/kim loại nặng y tế.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry Parameters Matrix Table -->
+      <div class="glass-card" style="margin-top: 1.25rem;">
+        <div class="card-header-flex">
+          <div>
+            <h4 class="card-title">Bảng đối chiếu chỉ số</h4>
+            <p class="card-subtitle">So sánh giá trị đo trực tiếp, mức danh định, độ lệch Z-Score và ngưỡng an toàn</p>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Chỉ số</th>
+                <th>Hiện tại</th>
+                <th>Tham chiếu</th>
+                <th>Giới hạn theo dõi</th>
+                <th>Z-score</th>
+                <th>Độ lệch (%)</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="analyticsTableBody">
+              <!-- Injected via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: CẢM BIẾN & HIỆU CHUẨN (SENSORS LAB) -->
+    <!-- ========================================== -->
+    <section class="tab-pane" id="tab-sensors">
+      <div class="sensors-header-row">
+        <div>
+          <h3 class="section-title">
+            <span></span> <span>Hệ Thống 10 Cảm biến Đa Tầng (Sensor Array Lab)</span>
+          </h3>
+          <p class="card-subtitle">
+            Giá trị hiện tại, tham chiếu và xu hướng gần nhất. Chọn chỉ số để xem cấu hình.
+          </p>
+        </div>
+        <div class="sensors-filter-badges">
+          <span class="badge badge-live">10 chỉ số theo dõi</span>
+          <span class="badge badge-simulated">Dữ liệu mô phỏng</span>
+        </div>
+      </div>
+
+      <!-- 10 Sensor Cards Grid -->
+      <div class="sensors-grid" id="sensorsGrid">
+        <!-- Dynamically populated by app.js with Sparklines & ADC details -->
+      </div>
+
+      <!-- Calibration Hardware Abstraction Layer Info Banner -->
+      <div class="glass-card" style="margin-top: 1.5rem; padding: 1.25rem;">
+        <div class="card-header-flex">
+          <div>
+            <h4 class="card-title">Nguồn dữ liệu & cấu hình</h4>
+            <p class="card-subtitle">Kiểm tra nguồn và trạng thái của từng chỉ số trong cửa sổ cấu hình.</p>
+          </div>
+          <span class="badge badge-beta">Cấu hình cảm biến</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.5rem;">
+          Dữ liệu từ cảm biến thật được chuẩn hóa qua 4 bước: 
+          <code>ADC Raw &rarr; Điện áp (V) &rarr; Hiệu Chuẩn Bù Nhiệt (Temperature Compensation) &rarr; Lọc Moving Average &rarr; MQTT JSON Packet</code>.
+          Nhấn vào bất kỳ thẻ cảm biến nào ở trên để cấu hình trạng thái (LIVE, SIMULATED, BETA, FAULT) hoặc hiệu chuẩn lại thông số.
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: CHẤP HÀNH & SỰ CỐ (ACTUATORS VAULT) -->
+    <!-- ========================================== -->
+    <section class="tab-pane" id="tab-actuators">
+      <!-- 3 Primary Actuator Cards -->
+      <div class="actuators-grid">
+        <!-- Water Solenoid Valve -->
+        <div class="glass-card actuator-card">
+          <div class="actuator-header">
+            <div class="actuator-title">
+              <span class="act-icon"></span>
+              <div>
+                <h4>Van cấp nước</h4>
+                <span class="act-sub">Rơ-le điều khiển ngắt dòng cấp tức thời</span>
+              </div>
+            </div>
+            <span class="badge badge-live" id="valveStateBadge">ĐANG MỞ</span>
+          </div>
+          <p class="actuator-desc" id="valveReason">
+            Chế độ: <strong>TỰ ĐỘNG (AUTO)</strong>. Tự động đóng ngắt khi phát hiện ô nhiễm hoặc rò điện.
+          </p>
+          <div class="actuator-actions">
+            <button class="btn btn-danger" onclick="setValve('CLOSE')"> Đóng van</button>
+            <button class="btn btn-success" onclick="setValve('OPEN')"> Mở van</button>
+            <button class="btn btn-outline" id="valveModeBtn" onclick="toggleValveMode()">Mode: AUTO</button>
+          </div>
+        </div>
+
+        <!-- Preserved Water Sample Mechanism -->
+        <div class="glass-card actuator-card">
+          <div class="actuator-header">
+            <div class="actuator-title">
+              <span class="act-icon"></span>
+              <div>
+                <h4>Bình lưu mẫu</h4>
+                <span class="act-sub">Van servo cô lập mẫu chất lỏng vào ống nghiệm</span>
+              </div>
+            </div>
+            <span class="badge badge-simulated" id="sampleStateBadge">SẴN SÀNG</span>
+          </div>
+          <p class="actuator-desc" id="sampleDetails">
+            Tự động niêm phong mẫu nước khi xuất hiện biến động nghiêm trọng để gửi phòng kiểm nghiệm.
+          </p>
+          <div class="actuator-actions">
+            <button class="btn btn-primary" onclick="triggerSample()"> Lưu mẫu</button>
+            <button class="btn btn-outline" onclick="resetSampleVial()"> Thay bình mẫu</button>
+          </div>
+        </div>
+
+        <!-- Alarm Siren -->
+        <div class="glass-card actuator-card">
+          <div class="actuator-header">
+            <div class="actuator-title">
+              <span class="act-icon"></span>
+              <div>
+                <h4>Còi báo động</h4>
+                <span class="act-sub">Cảnh báo âm thanh & đèn flash nhấp nháy</span>
+              </div>
+            </div>
+            <span class="badge badge-live" id="alarmStateBadge">Không báo động</span>
+          </div>
+          <p class="actuator-desc">
+            Kích hoạt còi hú tức thời khi nguy cơ rò điện hoặc ô nhiễm vượt ngưỡng khẩn cấp.
+          </p>
+          <div class="actuator-actions">
+            <button class="btn btn-danger" id="alarmMuteBtn" onclick="toggleAlarmMute()"> Tắt Chuông</button>
+            <button class="btn btn-outline" onclick="testAudioBeep()"> Thử âm báo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preserved Samples Catalog Vault -->
+      <div class="glass-card" style="margin-top: 1.5rem;">
+        <div class="card-header-flex">
+          <div>
+            <h4 class="card-title"> Mẫu nước đã lưu</h4>
+            <p class="card-subtitle">Lịch sử các ống nghiệm mẫu được khóa tự động để phục vụ đối chứng pháp lý và xét nghiệm chuyên sâu</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadPreservedSamples()">
+             Làm mới
+          </button>
+        </div>
+        <div class="table-responsive" style="margin-top: 0.75rem;">
+          <div id="samplesListContainer">
+            Chưa có mẫu nước nào được kích hoạt lưu trữ.
+          </div>
+        </div>
+      </div>
+
+      <!-- System Audit Log Full Table -->
+      <div class="glass-card" style="margin-top: 1.5rem;">
+        <div class="card-header-flex">
+          <div>
+            <h4 class="card-title"> Nhật ký vận hành</h4>
+            <p class="card-subtitle">Lịch sử cảnh báo, thay đổi trạng thái và thao tác điều khiển.</p>
+          </div>
+          <div class="log-filter-buttons">
+            <button class="btn btn-sm btn-outline active" onclick="filterAuditLogs('ALL')">Tất cả</button>
+            <button class="btn btn-sm btn-outline" onclick="filterAuditLogs('CRITICAL')">Khẩn cấp</button>
+            <button class="btn btn-sm btn-outline" onclick="filterAuditLogs('WARNING')">Cảnh báo</button>
+            <button class="btn btn-sm btn-outline" onclick="filterAuditLogs('INFO')">Thông tin</button>
+            <button class="btn btn-sm btn-danger" onclick="clearAllAlerts()"> Xóa nhật ký</button>
+          </div>
+        </div>
+        <div class="logs-list-expanded" id="logsListExpanded">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: PHÒNG KỊCH BẢN (SCENARIO LAB)      -->
+    <!-- ========================================== -->
+    <section class="tab-pane" id="tab-scenarios">
+      <div class="scenario-section">
+        <div class="card-header-flex" style="margin-bottom: 1.25rem;">
+          <div>
+            <h3 class="section-title" style="margin-bottom: 0.25rem;">
+              <span></span> <span>Trung Tâm Kích Hoạt Mô phỏng Mô Phỏng (Scenario Engine)</span>
+            </h3>
+            <p class="card-subtitle">
+              Chọn tình huống để theo dõi biến động chỉ số và phản ứng của hệ thống.
+            </p>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="resetBaseline()">
+             Về trạng thái ban đầu
+          </button>
+        </div>
+
+        <div class="scenario-buttons-grid" id="scenariosGrid">
+          <!-- Dynamically populated by app.js with rich scenario cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <p>
+          <strong>Smart Water Guardian</strong> &bull; Giám sát chất lượng nước
+        </p>
+        <p class="footer-sub">
+          Dữ liệu mô phỏng · Phục vụ thử nghiệm và vận hành
+        </p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Mobile Floating Bottom Navigation Dock (Visible automatically only on Mobile Screens) -->
+  <div class="mobile-dock-nav" id="mobileDockNav">
+    <button class="dock-nav-item active" data-tab="tab-overview" onclick="switchTab('tab-overview')">
+      <span class="dock-icon">01</span>
+      <span class="dock-label">Tổng quan</span>
+    </button>
+    <button class="dock-nav-item" data-tab="tab-analytics" onclick="switchTab('tab-analytics')">
+      <span class="dock-icon">02</span>
+      <span class="dock-label">Phân tích</span>
+    </button>
+    <button class="dock-nav-item" data-tab="tab-sensors" onclick="switchTab('tab-sensors')">
+      <span class="dock-icon">03</span>
+      <span class="dock-label">Cảm biến</span>
+    </button>
+    <button class="dock-nav-item" data-tab="tab-actuators" onclick="switchTab('tab-actuators')">
+      <span class="dock-icon">04</span>
+      <span class="dock-label">Điều khiển</span>
+    </button>
+    <button class="dock-nav-item" data-tab="tab-scenarios" onclick="switchTab('tab-scenarios')">
+      <span class="dock-icon">05</span>
+      <span class="dock-label">Mô phỏng</span>
+    </button>
+  </div>
+
+  <!-- Sensor Configuration & Calibration Modal -->
+  <div class="modal-overlay" id="sensorModal" style="display: none;" onclick="if(event.target===this) closeSensorModal()">
+    <div class="modal">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+          <h3 id="modalSensorTitle" style="margin: 0; font-size: 1.15rem;">Cấu Hình Cảm biến</h3>
+          <span style="font-size: 0.75rem; color: var(--text-secondary);" id="modalSensorSubtitle">Điều chỉnh nguồn dữ liệu và trạng thái kiểm định</span>
+        </div>
+        <button type="button" onclick="closeSensorModal()" class="btn-close-modal" aria-label="Đóng cửa sổ">×</button>
+      </div>
+
+      <div class="modal-readings">
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.4rem;">
+          <span style="color: var(--text-muted);">Giá trị hiện tại:</span>
+          <strong id="modalSensorVal" style="color: var(--accent-blue);">--</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.4rem;">
+          <span style="color: var(--text-muted);">Điện áp quy đổi (ước tính):</span>
+          <strong id="modalSensorAdc" style="color: var(--accent-green);">-- V</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+          <span style="color: var(--text-muted);">Hệ số Z-Score hiện tại:</span>
+          <strong id="modalSensorZ">--</strong>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label class="modal-label">Nguồn dữ liệu:</label>
+        <select id="modalSensorSource" class="modal-select">
+          <option value="simulator">Mô phỏng phần mềm</option>
+          <option value="hardware">Thiết bị phần cứng</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <label class="modal-label">Trạng thái:</label>
+        <select id="modalSensorStatus" class="modal-select">
+          <option value="LIVE">● LIVE (Đang đo thực địa)</option>
+          <option value="BETA">◐ BETA (Thử nghiệm tính năng)</option>
+          <option value="SIMULATED">◐ SIMULATED (Dữ liệu mô phỏng chuẩn)</option>
+          <option value="CALIBRATION REQUIRED"> CALIBRATION REQUIRED (Cần chuẩn hóa lại)</option>
+          <option value="FAULT"> FAULT (Lỗi phần cứng / Kẹt giá trị)</option>
+          <option value="OFFLINE">○ OFFLINE (Mất kết nối probe)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.6rem;">
+        <button type="button" class="btn btn-outline" onclick="closeSensorModal()">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="saveSensorConfig()">Lưu cấu hình</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js?v=workbench-2"></script>
+</body>
+</html>

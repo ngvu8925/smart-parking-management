@@ -1,0 +1,23 @@
+{
+  "id": "sensor_stuck",
+  "name": "Lỗi kẹt cảm biến (Stuck Sensor Hardware Fault)",
+  "description": "Cảm biến pH bị đông cứng số liệu (đứng yên không có nhiễu), hệ thống chẩn đoán lỗi phần cứng.",
+  "duration_seconds": 60,
+  "transition_seconds": 2,
+  "targets": {
+    "ph": 7.21,
+    "ec": 350.0,
+    "tds": 175.0,
+    "turbidity": 0.40,
+    "orp": 620.0,
+    "chlorine": 0.50,
+    "temperature": 27.5,
+    "nh4": 0.03,
+    "no3": 4.0,
+    "uv254": 0.020,
+    "electrical_leak": 0.0
+  },
+  "faults": {
+    "stuck_sensors": ["ph"]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "chlorine_failure",
+  "name": "Mất clo khử trùng (Chlorine Depletion)",
+  "description": "Clo dư tụt về gần 0, nguy cơ vi khuẩn và mầm bệnh sinh sôi không được kiểm soát.",
+  "duration_seconds": 60,
+  "transition_seconds": 6,
+  "targets": {
+    "ph": 7.25,
+    "ec": 340.0,
+    "tds": 170.0,
+    "turbidity": 0.50,
+    "orp": 420.0,
+    "chlorine": 0.02,
+    "temperature": 27.5,
+    "nh4": 0.09,
+    "no3": 4.1,
+    "uv254": 0.038,
+    "electrical_leak": 0.0
+  }
+}

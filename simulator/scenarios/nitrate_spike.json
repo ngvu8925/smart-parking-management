@@ -1,0 +1,20 @@
+{
+  "id": "nitrate_spike",
+  "name": "Nhiễm Nitrat nông nghiệp (Nitrate Runoff)",
+  "description": "Nồng độ NO3 tăng cao vượt chuẩn an toàn do phân bón nông nghiệp hoặc rò rỉ hóa chất.",
+  "duration_seconds": 60,
+  "transition_seconds": 8,
+  "targets": {
+    "ph": 7.30,
+    "ec": 620.0,
+    "tds": 310.0,
+    "turbidity": 1.10,
+    "orp": 580.0,
+    "chlorine": 0.38,
+    "temperature": 27.6,
+    "nh4": 0.08,
+    "no3": 28.5,
+    "uv254": 0.030,
+    "electrical_leak": 0.0
+  }
+}

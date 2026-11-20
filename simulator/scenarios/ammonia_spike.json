@@ -1,0 +1,20 @@
+{
+  "id": "ammonia_spike",
+  "name": "Nhiễm Amoni / Nước thải (Ammonia Contamination)",
+  "description": "Nồng độ NH4 tăng vọt, báo hiệu nước thải sinh hoạt hoặc phân bón hữu cơ thấm vào nguồn cấp.",
+  "duration_seconds": 60,
+  "transition_seconds": 8,
+  "targets": {
+    "ph": 7.65,
+    "ec": 580.0,
+    "tds": 290.0,
+    "turbidity": 2.10,
+    "orp": 460.0,
+    "chlorine": 0.08,
+    "temperature": 28.1,
+    "nh4": 0.72,
+    "no3": 6.8,
+    "uv254": 0.062,
+    "electrical_leak": 0.0
+  }
+}

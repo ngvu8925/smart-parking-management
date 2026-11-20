@@ -1,0 +1,20 @@
+{
+  "id": "salt_spike",
+  "name": "Nhiễm khoáng / Xâm nhập mặn (Saline & Ion Surge)",
+  "description": "EC và TDS tăng đột biến do nước mặn hoặc hóa chất vô cơ hòa tan rò rỉ vào hệ thống.",
+  "duration_seconds": 60,
+  "transition_seconds": 10,
+  "targets": {
+    "ph": 7.35,
+    "ec": 1850.0,
+    "tds": 925.0,
+    "turbidity": 0.65,
+    "orp": 590.0,
+    "chlorine": 0.42,
+    "temperature": 28.0,
+    "nh4": 0.05,
+    "no3": 6.5,
+    "uv254": 0.025,
+    "electrical_leak": 0.0
+  }
+}

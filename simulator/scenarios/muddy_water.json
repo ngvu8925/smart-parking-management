@@ -1,0 +1,20 @@
+{
+  "id": "muddy_water",
+  "name": "Nước vẩn đục / Sụt lở cặn (Muddy Water Influx)",
+  "description": "Độ đục tăng vọt do vỡ đường ống, súc rửa xáo trộn bùn đất hoặc cặn lơ lửng.",
+  "duration_seconds": 60,
+  "transition_seconds": 8,
+  "targets": {
+    "ph": 7.10,
+    "ec": 420.0,
+    "tds": 210.0,
+    "turbidity": 12.80,
+    "orp": 540.0,
+    "chlorine": 0.35,
+    "temperature": 27.8,
+    "nh4": 0.08,
+    "no3": 5.2,
+    "uv254": 0.045,
+    "electrical_leak": 0.0
+  }
+}
